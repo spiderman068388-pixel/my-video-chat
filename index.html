@@ -1,152 +1,28 @@
-<!DOCTYPE html>
-<html lang="hi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OmeTV Clone - Pro Version</title>
-    <style>
-        body { background-color: #1a1a1a; color: white; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        
-        /* Main Container */
-        .main-wrapper { display: flex; flex-direction: column; height: 100%; }
+// ... (purana code) ...
+const socket = io();
+let currentRoom = null;
 
-        /* Video Area */
-        .video-container { display: flex; flex: 1; width: 100%; background: #000; flex-direction: row; }
-        
-        .video-box { flex: 1; position: relative; border: 1px solid #333; display: flex; background: #222; overflow: hidden; }
-        video { width: 100%; height: 100%; object-fit: cover; }
-        #localVideo { transform: scaleX(-1); }
+socket.on('matched', async (roomId) => {
+    currentRoom = roomId;
+    console.log("Partner mil gaya! Room:", roomId);
+    // Jo doosra user aaya hai, wo offer generate karega
+    initiateCall(); 
+});
 
-        .label { position: absolute; bottom: 15px; left: 15px; background: rgba(0,0,0,0.7); padding: 5px 12px; border-radius: 5px; font-size: 14px; z-index: 5; font-weight: bold; border: 1px solid #444; }
-
-        /* Chat Overlay - Fixed for both Mobile & Laptop */
-        #chat-area { position: absolute; bottom: 20px; left: 20px; width: 280px; background: rgba(28, 28, 28, 0.85); border-radius: 12px; padding: 12px; z-index: 10; border: 1px solid #444; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        #messages { height: 100px; overflow-y: auto; font-size: 14px; margin-bottom: 8px; text-align: left; padding-right: 5px; }
-        .input-group { display: flex; gap: 8px; }
-        input { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #555; background: #222; color: white; outline: none; }
-        .send-btn { background: #5cb85c; border: none; padding: 0 15px; border-radius: 6px; color: white; cursor: pointer; font-weight: bold; }
-
-        /* Controls Section - Proper Laptop Buttons */
-        .controls-bar { height: 100px; background: #222; display: flex; align-items: center; justify-content: center; gap: 15px; border-top: 2px solid #333; padding: 0 20px; }
-        
-        .btn { border: none; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 18px; color: white; height: 65px; min-width: 140px; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
-        
-        .next-btn { background-color: #5cb85c; box-shadow: 0 4px #3e8e41; }
-        .stop-btn { background-color: #ff5c33; box-shadow: 0 4px #d43f00; }
-        .start-btn { background-color: #00d1ff; box-shadow: 0 4px #0099cc; color: #000; }
-        
-        .btn:active { transform: translateY(3px); box-shadow: 0 1px #666; }
-        .btn:hover { opacity: 0.9; }
-
-        /* Mobile Adjustments */
-        @media (max-width: 768px) {
-            .video-container { flex-direction: column; }
-            .btn { height: 55px; min-width: 90px; font-size: 14px; }
-            .controls-bar { gap: 8px; height: 90px; }
-            #chat-area { width: 220px; bottom: 105px; left: 10px; }
-        }
-    </style>
-</head>
-<body>
-
-    <div class="main-wrapper">
-        <div class="video-container">
-            <div class="video-box">
-                <video id="remoteVideo" autoplay playsinline></video>
-                <div class="label">Stranger</div>
-                
-                <div id="chat-area">
-                    <div id="messages"><b>System:</b> Connection ready!</div>
-                    <div class="input-group">
-                        <input type="text" id="msgInput" placeholder="Type a message...">
-                        <button class="send-btn" onclick="sendMessage()">Send</button>
-                    </div>
-                </div>
-            </div>
-            <div class="video-box">
-                <video id="localVideo" autoplay muted playsinline></video>
-                <div class="label">You (Me)</div>
-            </div>
-        </div>
-
-        <div class="controls-bar">
-            <button class="btn start-btn" onclick="initiateCall()">START</button>
-            <button class="btn next-btn" onclick="window.location.reload()">NEXT</button>
-            <button class="btn stop-btn" onclick="stopCam()">STOP</button>
-        </div>
-    </div>
-
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io();
-        let localStream;
-        const configuration = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
-        let pc = new RTCPeerConnection(configuration);
-
-        async function initiateCall() {
-            try {
-                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                document.getElementById('localVideo').srcObject = localStream;
-                localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-                const offer = await pc.createOffer();
-                await pc.setLocalDescription(offer);
-                socket.emit('signal', JSON.stringify({ offer }));
-            } catch (err) {
-                alert("Please allow camera access!");
-            }
-        }
-
-        function stopCam() {
-            if(localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-                document.getElementById('localVideo').srcObject = null;
-            }
-        }
-
-        pc.ontrack = (event) => {
-            document.getElementById('remoteVideo').srcObject = event.streams[0];
-        };
-
-        pc.onicecandidate = (event) => {
-            if (event.candidate) {
-                socket.emit('signal', JSON.stringify({ candidate: event.candidate }));
-            }
-        };
-
-        socket.on('signal', async (data) => {
-            const msg = JSON.parse(data);
-            if (msg.offer) {
-                await pc.setRemoteDescription(new RTCSessionDescription(msg.offer));
-                const answer = await pc.createAnswer();
-                await pc.setLocalDescription(answer);
-                socket.emit('signal', JSON.stringify({ answer }));
-            } else if (msg.answer) {
-                await pc.setRemoteDescription(new RTCSessionDescription(msg.answer));
-            } else if (msg.candidate) {
-                await pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
-            } else if (msg.text) {
-                const div = document.createElement('div');
-                div.innerHTML = "<b>Dost:</b> " + msg.text;
-                document.getElementById('messages').appendChild(div);
-                document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
-            }
-        });
-
-        function sendMessage() {
-            const input = document.getElementById('msgInput');
-            if(input.value.trim() === "") return;
-            socket.emit('signal', JSON.stringify({ text: input.value }));
-            const div = document.createElement('div');
-            div.innerHTML = "<b>Me:</b> " + input.value;
-            document.getElementById('messages').appendChild(div);
-            document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
-            input.value = "";
+// initiateCall mein 'socket.emit' ke sath room bhejna hai
+async function initiateCall() {
+    try {
+        if(!localStream) {
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            document.getElementById('localVideo').srcObject = localStream;
+            localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
         }
         
-        // Enter key to send
-        document.getElementById('msgInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendMessage();
-        });
-    </script>
-</body>
-</html>
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        socket.emit('signal', JSON.stringify({ offer }));
+    } catch (err) {
+        console.error(err);
+    }
+}
+// ... (baaki ka signal logic waisa hi rahega) ...
