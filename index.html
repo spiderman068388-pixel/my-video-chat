@@ -3,27 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OmeTV Clone - Pro</title>
+    <title>OmeTV Clone - Mobile Fix</title>
     <style>
-        /* Interface Styling */
-        body { background-color: #1a1a1a; color: white; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        .video-container { display: flex; flex: 1; width: 100%; background: #000; flex-direction: row; }
-        .video-box { flex: 1; position: relative; border: 1px solid #333; background: #222; }
+        body { 
+            background-color: #121212; color: white; margin: 0; padding: 0; 
+            font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; 
+        }
+        .video-grid { 
+            flex: 1; display: flex; flex-direction: column; background: #000;
+        }
+        .video-box { 
+            flex: 1; position: relative; border: 1px solid #333; overflow: hidden;
+        }
         video { width: 100%; height: 100%; object-fit: cover; }
         #localVideo { transform: scaleX(-1); }
-        .label { position: absolute; bottom: 15px; left: 15px; background: rgba(0,0,0,0.7); padding: 5px 12px; border-radius: 5px; font-size: 14px; font-weight: bold; }
-        .controls-bar { height: 100px; background: #222; display: flex; align-items: center; justify-content: center; gap: 15px; border-top: 2px solid #333; }
-        .btn { border: none; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 18px; color: white; height: 60px; min-width: 120px; }
-        .next-btn { background-color: #5cb85c; }
-        .stop-btn { background-color: #ff5c33; }
-        .start-btn { background-color: #00d1ff; color: #000; }
-        #status-msg { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); padding: 8px 20px; border-radius: 20px; z-index: 100; font-size: 14px; }
-        @media (max-width: 768px) { .video-container { flex-direction: column; } }
+        .label { 
+            position: absolute; bottom: 10px; left: 10px; 
+            background: rgba(0,0,0,0.6); padding: 4px 10px; border-radius: 4px; font-size: 12px;
+        }
+        .status-bar {
+            position: absolute; top: 10px; width: 100%; text-align: center; z-index: 10;
+        }
+        .status-text {
+            background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 20px; font-size: 14px;
+        }
+        .controls { 
+            height: 80px; background: #1e1e1e; display: flex; 
+            justify-content: space-around; align-items: center; padding: 0 10px;
+        }
+        .btn { 
+            flex: 1; margin: 0 5px; height: 50px; border: none; 
+            border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer;
+        }
+        .start-btn { background: #0084ff; color: white; }
+        .next-btn { background: #28a745; color: white; }
+        
+        @media (min-width: 768px) { .video-grid { flex-direction: row; } }
     </style>
 </head>
 <body>
-    <div id="status-msg">Press START to begin</div>
-    <div class="video-container">
+    <div class="status-bar">
+        <span class="status-text" id="status">Press START</span>
+    </div>
+
+    <div class="video-grid">
         <div class="video-box">
             <video id="remoteVideo" autoplay playsinline></video>
             <div class="label">Stranger</div>
@@ -33,40 +56,31 @@
             <div class="label">You (Me)</div>
         </div>
     </div>
-    <div class="controls-bar">
+
+    <div class="controls">
         <button id="startBtn" class="btn start-btn" onclick="startMatching()">START</button>
-        <button class="btn next-btn" onclick="window.location.reload()">NEXT</button>
-        <button class="btn stop-btn" onclick="location.reload()">STOP</button>
+        <button class="btn next-btn" onclick="location.reload()">NEXT</button>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        let localStream;
-        let pc;
-        let currentRoomId = null;
+        let localStream, pc, currentRoomId = null;
         const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
         async function startMatching() {
-            document.getElementById('startBtn').innerText = "Matching...";
-            document.getElementById('status-msg').innerText = "Connecting to camera...";
+            document.getElementById('status').innerText = "Finding stranger...";
             try {
                 localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 document.getElementById('localVideo').srcObject = localStream;
                 socket.emit('start-match');
-                document.getElementById('status-msg').innerText = "Finding a stranger...";
-            } catch (e) { 
-                alert("Camera allow karo bhai!"); 
-                document.getElementById('status-msg').innerText = "Error: Camera Denied";
-            }
+            } catch (e) { alert("Camera allow karo bhai!"); }
         }
 
         socket.on('matched', async (roomId) => {
-            console.log("Partner mil gaya!");
-            document.getElementById('status-msg').innerText = "Stranger Connected!";
             currentRoomId = roomId;
+            document.getElementById('status').innerText = "Connected!";
             setupWebRTC();
-            
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
             socket.emit('signal', { offer, roomId: currentRoomId });
@@ -76,15 +90,9 @@
             if (pc) pc.close();
             pc = new RTCPeerConnection(config);
             localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-
-            pc.ontrack = (event) => {
-                document.getElementById('remoteVideo').srcObject = event.streams[0];
-            };
-
+            pc.ontrack = (event) => { document.getElementById('remoteVideo').srcObject = event.streams[0]; };
             pc.onicecandidate = (event) => {
-                if (event.candidate) {
-                    socket.emit('signal', { candidate: event.candidate, roomId: currentRoomId });
-                }
+                if (event.candidate) socket.emit('signal', { candidate: event.candidate, roomId: currentRoomId });
             };
         }
 
@@ -98,9 +106,7 @@
             } else if (data.answer) {
                 await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
             } else if (data.candidate) {
-                try {
-                    await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-                } catch(e) { console.error("ICE error", e); }
+                try { await pc.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch(e) {}
             }
         });
     </script>
