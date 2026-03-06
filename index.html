@@ -1,62 +1,108 @@
-const socket = io();
-let localStream;
-let pc;
-let currentRoomId = null; // Room ID track karne ke liye
-const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OmeTV Clone - Pro</title>
+    <style>
+        /* Interface Styling */
+        body { background-color: #1a1a1a; color: white; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        .video-container { display: flex; flex: 1; width: 100%; background: #000; flex-direction: row; }
+        .video-box { flex: 1; position: relative; border: 1px solid #333; background: #222; }
+        video { width: 100%; height: 100%; object-fit: cover; }
+        #localVideo { transform: scaleX(-1); }
+        .label { position: absolute; bottom: 15px; left: 15px; background: rgba(0,0,0,0.7); padding: 5px 12px; border-radius: 5px; font-size: 14px; font-weight: bold; }
+        .controls-bar { height: 100px; background: #222; display: flex; align-items: center; justify-content: center; gap: 15px; border-top: 2px solid #333; }
+        .btn { border: none; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 18px; color: white; height: 60px; min-width: 120px; }
+        .next-btn { background-color: #5cb85c; }
+        .stop-btn { background-color: #ff5c33; }
+        .start-btn { background-color: #00d1ff; color: #000; }
+        #status-msg { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); padding: 8px 20px; border-radius: 20px; z-index: 100; font-size: 14px; }
+        @media (max-width: 768px) { .video-container { flex-direction: column; } }
+    </style>
+</head>
+<body>
+    <div id="status-msg">Press START to begin</div>
+    <div class="video-container">
+        <div class="video-box">
+            <video id="remoteVideo" autoplay playsinline></video>
+            <div class="label">Stranger</div>
+        </div>
+        <div class="video-box">
+            <video id="localVideo" autoplay muted playsinline></video>
+            <div class="label">You (Me)</div>
+        </div>
+    </div>
+    <div class="controls-bar">
+        <button id="startBtn" class="btn start-btn" onclick="startMatching()">START</button>
+        <button class="btn next-btn" onclick="window.location.reload()">NEXT</button>
+        <button class="btn stop-btn" onclick="location.reload()">STOP</button>
+    </div>
 
-async function startMatching() {
-    try {
-        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        document.getElementById('localVideo').srcObject = localStream;
-        socket.emit('start-match'); 
-        console.log("Matching shuru...");
-        document.getElementById('messages').innerText = "System: Finding a stranger...";
-    } catch (e) { alert("Camera allow karo bhai!"); }
-}
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let localStream;
+        let pc;
+        let currentRoomId = null;
+        const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
-socket.on('matched', async (roomId) => {
-    console.log("Partner mil gaya! Room ID:", roomId);
-    currentRoomId = roomId; // Room ID save kar lo
-    document.getElementById('messages').innerText = "System: Connected to stranger!";
-    
-    setupWebRTC();
-    
-    // Sirf matched hone par hi offer bhejenge
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-    socket.emit('signal', { offer, roomId: currentRoomId }); // Room ID ke saath bhejo
-});
-
-function setupWebRTC() {
-    if (pc) pc.close(); // Purana connection saaf karo
-    pc = new RTCPeerConnection(config);
-    
-    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-
-    pc.ontrack = (event) => {
-        document.getElementById('remoteVideo').srcObject = event.streams[0];
-    };
-
-    pc.onicecandidate = (event) => {
-        if (event.candidate) {
-            // Har candidate ko Room ID ke saath bhejo
-            socket.emit('signal', { candidate: event.candidate, roomId: currentRoomId });
+        async function startMatching() {
+            document.getElementById('startBtn').innerText = "Matching...";
+            document.getElementById('status-msg').innerText = "Connecting to camera...";
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                document.getElementById('localVideo').srcObject = localStream;
+                socket.emit('start-match');
+                document.getElementById('status-msg').innerText = "Finding a stranger...";
+            } catch (e) { 
+                alert("Camera allow karo bhai!"); 
+                document.getElementById('status-msg').innerText = "Error: Camera Denied";
+            }
         }
-    };
-}
 
-socket.on('signal', async (data) => {
-    if (data.offer) {
-        setupWebRTC();
-        await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        socket.emit('signal', { answer, roomId: currentRoomId });
-    } else if (data.answer) {
-        await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-    } else if (data.candidate) {
-        try {
-            await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-        } catch (e) { console.error("Error adding ice candidate", e); }
-    }
-});
+        socket.on('matched', async (roomId) => {
+            console.log("Partner mil gaya!");
+            document.getElementById('status-msg').innerText = "Stranger Connected!";
+            currentRoomId = roomId;
+            setupWebRTC();
+            
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            socket.emit('signal', { offer, roomId: currentRoomId });
+        });
+
+        function setupWebRTC() {
+            if (pc) pc.close();
+            pc = new RTCPeerConnection(config);
+            localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+            pc.ontrack = (event) => {
+                document.getElementById('remoteVideo').srcObject = event.streams[0];
+            };
+
+            pc.onicecandidate = (event) => {
+                if (event.candidate) {
+                    socket.emit('signal', { candidate: event.candidate, roomId: currentRoomId });
+                }
+            };
+        }
+
+        socket.on('signal', async (data) => {
+            if (data.offer) {
+                setupWebRTC();
+                await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+                socket.emit('signal', { answer, roomId: currentRoomId });
+            } else if (data.answer) {
+                await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+            } else if (data.candidate) {
+                try {
+                    await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+                } catch(e) { console.error("ICE error", e); }
+            }
+        });
+    </script>
+</body>
+</html>
