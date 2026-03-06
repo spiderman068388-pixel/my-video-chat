@@ -1,31 +1,36 @@
 const socket = io();
 let localStream;
 let pc;
+let currentRoomId = null; // Room ID track karne ke liye
 const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
-// Jab koi "START" dabaye
 async function startMatching() {
     try {
         localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         document.getElementById('localVideo').srcObject = localStream;
-        socket.emit('start-match'); // Server ko signal bhejo ki hum taiyaar hain
+        socket.emit('start-match'); 
         console.log("Matching shuru...");
+        document.getElementById('messages').innerText = "System: Finding a stranger...";
     } catch (e) { alert("Camera allow karo bhai!"); }
 }
 
-// Jab server do logon ko jode (Matched event)
 socket.on('matched', async (roomId) => {
-    console.log("Partner mil gaya!");
+    console.log("Partner mil gaya! Room ID:", roomId);
+    currentRoomId = roomId; // Room ID save kar lo
+    document.getElementById('messages').innerText = "System: Connected to stranger!";
+    
     setupWebRTC();
     
-    // Offer create karo
+    // Sirf matched hone par hi offer bhejenge
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-    socket.emit('signal', { offer });
+    socket.emit('signal', { offer, roomId: currentRoomId }); // Room ID ke saath bhejo
 });
 
 function setupWebRTC() {
+    if (pc) pc.close(); // Purana connection saaf karo
     pc = new RTCPeerConnection(config);
+    
     localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
 
     pc.ontrack = (event) => {
@@ -33,21 +38,25 @@ function setupWebRTC() {
     };
 
     pc.onicecandidate = (event) => {
-        if (event.candidate) socket.emit('signal', { candidate: event.candidate });
+        if (event.candidate) {
+            // Har candidate ko Room ID ke saath bhejo
+            socket.emit('signal', { candidate: event.candidate, roomId: currentRoomId });
+        }
     };
 }
 
-// Signal receive karne ka logic
 socket.on('signal', async (data) => {
     if (data.offer) {
         setupWebRTC();
         await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
-        socket.emit('signal', { answer });
+        socket.emit('signal', { answer, roomId: currentRoomId });
     } else if (data.answer) {
         await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
     } else if (data.candidate) {
-        await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+        try {
+            await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+        } catch (e) { console.error("Error adding ice candidate", e); }
     }
 });
