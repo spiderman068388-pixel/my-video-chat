@@ -11,58 +11,68 @@ app.get('/', (req, res) => {
     <html lang="hi">
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-        <title>Cyber OmeTV Pro</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+        <title>Cyber OmeTV Fixed</title>
         <style>
             * { box-sizing: border-box; margin: 0; padding: 0; }
             body { 
-                background: #0a0b1e; color: #00f2ff; 
-                font-family: 'Segoe UI', sans-serif; height: 100vh;
+                background: #050510; color: #00f2ff; 
+                font-family: 'Segoe UI', sans-serif; 
+                height: 100vh; height: -webkit-fill-available; /* Mobile height fix */
                 display: flex; flex-direction: column; overflow: hidden;
             }
+            
             #status { 
-                padding: 10px; text-align: center; font-size: 12px; font-weight: bold;
-                letter-spacing: 2px; text-shadow: 0 0 10px #00f2ff; background: rgba(0,0,0,0.3);
+                height: 40px; display: flex; align-items: center; justify-content: center;
+                font-size: 11px; font-weight: bold; letter-spacing: 1px;
+                background: rgba(0,0,0,0.4); border-bottom: 1px solid #1a1a3a;
             }
+
             .video-grid { 
-                flex: 1; display: flex; flex-direction: column; padding: 10px; gap: 10px; 
+                flex: 1; display: flex; flex-direction: column; 
+                padding: 10px; gap: 8px; overflow: hidden; /* Taaki scroll na aaye */
             }
-            @media (min-width: 768px) { .video-grid { flex-direction: row; padding: 20px; } }
+            
+            @media (min-width: 768px) { .video-grid { flex-direction: row; padding: 15px; } }
 
             .video-box { 
-                flex: 1; position: relative; border-radius: 15px; overflow: hidden;
-                background: #000; border: 2px solid rgba(0, 242, 255, 0.3);
-                box-shadow: inset 0 0 20px rgba(0, 242, 255, 0.2);
+                flex: 1; position: relative; border-radius: 12px; overflow: hidden;
+                background: #000; border: 1px solid rgba(0, 242, 255, 0.3);
+                /* Mobile par video ko limit karna taaki buttons ke liye jagah bache */
+                max-height: 40%; 
             }
+            
+            @media (min-width: 768px) { .video-box { max-height: 100%; } }
+
             video { width: 100%; height: 100%; object-fit: cover; }
-            #remoteVideo { border-color: #ff0055; box-shadow: 0 0 15px rgba(255, 0, 85, 0.4); }
+            #remoteVideo { border-color: #ff0055; }
             #localVideo { transform: scaleX(-1); }
 
+            /* Fixed Bottom Controls */
             .controls { 
-                height: 90px; display: flex; justify-content: center; align-items: center; 
-                gap: 15px; background: #050510; border-top: 1px solid #1a1a3a; padding: 0 15px;
+                height: 85px; display: flex; justify-content: center; align-items: center; 
+                gap: 12px; background: #0a0a1a; border-top: 2px solid #1a1a3a;
+                padding: 0 15px; padding-bottom: env(safe-area-inset-bottom);
             }
+
             .btn {
-                flex: 1; max-width: 250px; height: 55px; border: none; border-radius: 12px;
-                font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 16px;
-                transition: 0.2s;
+                flex: 1; max-width: 200px; height: 50px; border: none; border-radius: 10px;
+                font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 14px;
+                transition: 0.2s; -webkit-tap-highlight-color: transparent;
             }
-            .connect-btn { 
-                background: #00f2ff; color: #000; box-shadow: 0 0 20px #00f2ff;
-            }
-            .skip-btn { 
-                background: transparent; border: 2px solid #ff0055; color: #ff0055;
-            }
-            .btn:active { transform: scale(0.95); }
+            .connect-btn { background: #00f2ff; color: #000; box-shadow: 0 0 15px rgba(0, 242, 255, 0.5); }
+            .skip-btn { background: transparent; border: 1px solid #ff0055; color: #ff0055; }
+            
+            .btn:active { transform: scale(0.92); filter: brightness(1.2); }
 
             .label {
-                position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.6);
-                padding: 4px 10px; border-radius: 5px; font-size: 10px; border: 1px solid #333;
+                position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.6);
+                padding: 3px 8px; border-radius: 4px; font-size: 9px; border: 1px solid #222;
             }
         </style>
     </head>
     <body>
-        <div id="status">ACCESSING BIO-STREAM...</div>
+        <div id="status">READY FOR UPLINK</div>
         <div class="video-grid">
             <div class="video-box">
                 <video id="remoteVideo" autoplay playsinline></video>
@@ -80,20 +90,23 @@ app.get('/', (req, res) => {
 
         <script src="/socket.io/socket.io.js"></script>
         <script>
+            // ... (Baki purana matching script wahi rahega) ...
             const socket = io();
             let localStream, pc, currentRoomId;
             const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
             async function startMatching() {
-                document.getElementById('status').innerText = "SEARCHING SUBJECT...";
-                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                document.getElementById('localVideo').srcObject = localStream;
-                socket.emit('start-match');
+                document.getElementById('status').innerText = "SEARCHING...";
+                try {
+                    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                    document.getElementById('localVideo').srcObject = localStream;
+                    socket.emit('start-match');
+                } catch(e) { alert("Camera Access Required!"); }
             }
 
             socket.on('matched', async (roomId) => {
                 currentRoomId = roomId;
-                document.getElementById('status').innerText = "STRANGER LOCATED!";
+                document.getElementById('status').innerText = "CONNECTED!";
                 pc = new RTCPeerConnection(config);
                 localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
                 pc.ontrack = (e) => document.getElementById('remoteVideo').srcObject = e.streams[0];
@@ -119,6 +132,7 @@ app.get('/', (req, res) => {
     `);
 });
 
+// ... (Server matching logic wahi rahega) ...
 let waitingUser = null;
 io.on('connection', (socket) => {
     socket.on('start-match', () => {
