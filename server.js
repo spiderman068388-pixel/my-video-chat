@@ -2,8 +2,14 @@ const express = require('express');
 const app = express();
 const server = require('http').Server(app);
 const io = require('socket.io')(server);
+const path = require('path');
 
-app.use(express.static('./'));
+// Sabse zaroori line: Ye index.html ko dhoond kar screen par layega
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.use(express.static(__dirname));
 
 let waitingUser = null;
 
@@ -32,4 +38,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 10000;
-server.listen(PORT, () => console.log('Server running on port ' + PORT));
+server.listen(PORT, () => console.log('Server is running on port ' + PORT));
