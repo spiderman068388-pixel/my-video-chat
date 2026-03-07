@@ -5,32 +5,77 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Ye logic file system ko bypass karke direct interface load karega
 app.get('/', (req, res) => {
     res.send(`
     <!DOCTYPE html>
-    <html lang="en">
+    <html lang="hi">
     <head>
-        <title>Cyber OmeTV - Final Fix</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <title>Cyber OmeTV Pro</title>
         <style>
-            body { background: #0a0b1e; color: white; font-family: sans-serif; text-align: center; margin: 0; display: flex; flex-direction: column; height: 100vh; justify-content: center; }
-            .video-container { display: flex; gap: 10px; justify-content: center; padding: 20px; flex-wrap: wrap; }
-            video { width: 45%; max-width: 400px; border: 2px solid #00f2ff; border-radius: 15px; background: black; transform: scaleX(-1); }
-            .controls { margin-top: 20px; }
-            button { padding: 15px 30px; font-weight: bold; border-radius: 30px; border: none; cursor: pointer; margin: 5px; }
-            #start { background: #00f2ff; box-shadow: 0 0 15px #00f2ff; }
-            #next { background: #2ecc71; }
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body { 
+                background: #0a0b1e; color: #00f2ff; 
+                font-family: 'Segoe UI', sans-serif; height: 100vh;
+                display: flex; flex-direction: column; overflow: hidden;
+            }
+            #status { 
+                padding: 10px; text-align: center; font-size: 12px; font-weight: bold;
+                letter-spacing: 2px; text-shadow: 0 0 10px #00f2ff; background: rgba(0,0,0,0.3);
+            }
+            .video-grid { 
+                flex: 1; display: flex; flex-direction: column; padding: 10px; gap: 10px; 
+            }
+            @media (min-width: 768px) { .video-grid { flex-direction: row; padding: 20px; } }
+
+            .video-box { 
+                flex: 1; position: relative; border-radius: 15px; overflow: hidden;
+                background: #000; border: 2px solid rgba(0, 242, 255, 0.3);
+                box-shadow: inset 0 0 20px rgba(0, 242, 255, 0.2);
+            }
+            video { width: 100%; height: 100%; object-fit: cover; }
+            #remoteVideo { border-color: #ff0055; box-shadow: 0 0 15px rgba(255, 0, 85, 0.4); }
+            #localVideo { transform: scaleX(-1); }
+
+            .controls { 
+                height: 90px; display: flex; justify-content: center; align-items: center; 
+                gap: 15px; background: #050510; border-top: 1px solid #1a1a3a; padding: 0 15px;
+            }
+            .btn {
+                flex: 1; max-width: 250px; height: 55px; border: none; border-radius: 12px;
+                font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 16px;
+                transition: 0.2s;
+            }
+            .connect-btn { 
+                background: #00f2ff; color: #000; box-shadow: 0 0 20px #00f2ff;
+            }
+            .skip-btn { 
+                background: transparent; border: 2px solid #ff0055; color: #ff0055;
+            }
+            .btn:active { transform: scale(0.95); }
+
+            .label {
+                position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.6);
+                padding: 4px 10px; border-radius: 5px; font-size: 10px; border: 1px solid #333;
+            }
         </style>
     </head>
     <body>
-        <h2 id="status">CYBER OME-TV: LIVE</h2>
-        <div class="video-container">
-            <video id="remoteVideo" autoplay playsinline></video>
-            <video id="localVideo" autoplay muted playsinline></video>
+        <div id="status">ACCESSING BIO-STREAM...</div>
+        <div class="video-grid">
+            <div class="video-box">
+                <video id="remoteVideo" autoplay playsinline></video>
+                <div class="label">STRANGER</div>
+            </div>
+            <div class="video-box">
+                <video id="localVideo" autoplay muted playsinline></video>
+                <div class="label">YOU</div>
+            </div>
         </div>
         <div class="controls">
-            <button id="start" onclick="startMatching()">START MATCH</button>
-            <button id="next" onclick="location.reload()">NEXT</button>
+            <button class="btn connect-btn" onclick="startMatching()">Connect</button>
+            <button class="btn skip-btn" onclick="location.reload()">Skip</button>
         </div>
 
         <script src="/socket.io/socket.io.js"></script>
@@ -40,7 +85,7 @@ app.get('/', (req, res) => {
             const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
             async function startMatching() {
-                document.getElementById('status').innerText = "CONNECTING...";
+                document.getElementById('status').innerText = "SEARCHING SUBJECT...";
                 localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 document.getElementById('localVideo').srcObject = localStream;
                 socket.emit('start-match');
@@ -48,12 +93,11 @@ app.get('/', (req, res) => {
 
             socket.on('matched', async (roomId) => {
                 currentRoomId = roomId;
-                document.getElementById('status').innerText = "STRANGER FOUND!";
+                document.getElementById('status').innerText = "STRANGER LOCATED!";
                 pc = new RTCPeerConnection(config);
                 localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
                 pc.ontrack = (e) => document.getElementById('remoteVideo').srcObject = e.streams[0];
                 pc.onicecandidate = (e) => e.candidate && socket.emit('signal', { candidate: e.candidate, roomId });
-                
                 const offer = await pc.createOffer();
                 await pc.setLocalDescription(offer);
                 socket.emit('signal', { offer, roomId });
@@ -88,5 +132,4 @@ io.on('connection', (socket) => {
     socket.on('signal', (data) => { if (data.roomId) socket.to(data.roomId).emit('signal', data); });
     socket.on('disconnect', () => { if (waitingUser === socket) waitingUser = null; });
 });
-
 server.listen(process.env.PORT || 10000);
