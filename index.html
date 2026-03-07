@@ -2,37 +2,28 @@
     const socket = io();
     let localStream, pc, currentRoomId = null;
 
-    // Multiple servers taaki connection kabhi fail na ho
+    // Ye servers video connect karne mein madad karenge
     const config = { 
         iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
             { urls: 'stun:stun1.l.google.com:19302' },
-            { urls: 'stun:stun2.l.google.com:19302' },
-            { urls: 'stun:stun.services.mozilla.com' }
+            { urls: 'stun:stun2.l.google.com:19302' }
         ] 
     };
 
     async function startMatching() {
-        document.getElementById('status').innerText = "System: Syncing Bio-Data...";
+        document.getElementById('status').innerText = "Accessing Camera...";
         try {
-            // Mobile par dono camera aur mic mangna zaroori hai
-            localStream = await navigator.mediaDevices.getUserMedia({ 
-                video: { width: { ideal: 640 }, height: { ideal: 480 } }, 
-                audio: true 
-            });
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             document.getElementById('localVideo').srcObject = localStream;
             socket.emit('start-match');
-        } catch (e) { 
-            alert("Bhai, Camera aur Mic allow karna padega setting se!"); 
-        }
+        } catch (e) { alert("Camera allow karo bhai!"); }
     }
 
     socket.on('matched', async (roomId) => {
         currentRoomId = roomId;
-        document.getElementById('status').innerText = "STRANGER LOCATED!";
+        document.getElementById('status').innerText = "Stranger Located!";
         setupWebRTC();
-        
-        // Match hone par Offer bhejna
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
         socket.emit('signal', { offer, roomId: currentRoomId });
@@ -41,27 +32,15 @@
     function setupWebRTC() {
         if (pc) pc.close();
         pc = new RTCPeerConnection(config);
-
-        // Local video tracks add karna
         localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-
-        // Jab stranger ka video aaye
-        pc.ontrack = (event) => {
-            console.log("Remote video received!");
-            document.getElementById('remoteVideo').srcObject = event.streams[0];
-        };
-
-        // Network info (ICE) exchange karna
-        pc.onicecandidate = (event) => {
-            if (event.candidate) {
-                socket.emit('signal', { candidate: event.candidate, roomId: currentRoomId });
-            }
+        pc.ontrack = (e) => { document.getElementById('remoteVideo').srcObject = e.streams[0]; };
+        pc.onicecandidate = (e) => {
+            if (e.candidate) socket.emit('signal', { candidate: e.candidate, roomId: currentRoomId });
         };
     }
 
     socket.on('signal', async (data) => {
         if (!pc) setupWebRTC();
-
         if (data.offer) {
             await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
             const answer = await pc.createAnswer();
@@ -70,9 +49,7 @@
         } else if (data.answer) {
             await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
         } else if (data.candidate) {
-            try {
-                await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-            } catch(e) { console.error("ICE Error", e); }
+            try { await pc.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch(e) {}
         }
     });
 </script>
