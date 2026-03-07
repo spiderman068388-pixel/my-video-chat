@@ -1,124 +1,31 @@
-<!DOCTYPE html>
-<html lang="hi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OmeTV Pro Clone</title>
-    <style>
-        * { box-sizing: border-box; }
-        body { 
-            background-color: #0b0b0b; color: white; margin: 0; padding: 0; 
-            font-family: 'Segoe UI', Roboto, sans-serif; height: 100vh; display: flex; flex-direction: column; 
-        }
-        /* Video Section */
-        .video-grid { 
-            flex: 1; display: flex; flex-direction: column; background: #000; position: relative;
-        }
-        .video-box { 
-            flex: 1; position: relative; border: 2px solid #1a1a1a; overflow: hidden; border-radius: 12px; margin: 4px;
-        }
-        video { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
-        #localVideo { transform: scaleX(-1); border: 2px solid #00d1ff; }
-        
-        /* Overlay UI */
-        .status-box {
-            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.7); padding: 8px 20px; border-radius: 25px;
-            z-index: 10; border: 1px solid #333; font-size: 14px; font-weight: bold;
-        }
-        .label { 
-            position: absolute; bottom: 10px; left: 10px; 
-            background: rgba(0,0,0,0.6); padding: 5px 12px; border-radius: 6px; font-size: 12px;
-        }
-
-        /* Controls Area */
-        .controls { 
-            height: 100px; background: #181818; display: flex; 
-            justify-content: center; align-items: center; padding: 0 15px; gap: 12px;
-            border-top: 1px solid #333;
-        }
-        .btn { 
-            padding: 0 25px; height: 55px; border: none; 
-            border-radius: 15px; font-weight: bold; font-size: 16px; cursor: pointer;
-            transition: 0.3s; color: white;
-        }
-        .start-btn { background: linear-gradient(135deg, #0084ff, #00d1ff); box-shadow: 0 4px 15px rgba(0,132,255,0.4); }
-        .next-btn { background: #28a745; }
-        .stop-btn { background: #dc3545; }
-        .btn:active { transform: scale(0.95); }
-
-        @media (min-width: 768px) { .video-grid { flex-direction: row; } }
-    </style>
-</head>
-<body>
-    <div class="status-box" id="status">Ready to Start</div>
-
-    <div class="video-grid">
-        <div class="video-box">
-            <video id="remoteVideo" autoplay playsinline></video>
-            <div class="label">Stranger</div>
-        </div>
-        <div class="video-box">
-            <video id="localVideo" autoplay muted playsinline></video>
-            <div class="label">You</div>
-        </div>
-    </div>
-
-    <div class="controls">
-        <button id="startBtn" class="btn start-btn" onclick="startMatching()">START</button>
-        <button class="btn next-btn" onclick="location.reload()">NEXT</button>
-        <button class="btn stop-btn" onclick="location.reload()">STOP</button>
-    </div>
-
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io();
-        let localStream, pc, currentRoomId = null;
-        const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
-
-        async function startMatching() {
-            document.getElementById('status').innerText = "Connecting Camera...";
-            document.getElementById('startBtn').style.display = "none";
-            try {
-                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                document.getElementById('localVideo').srcObject = localStream;
-                socket.emit('start-match');
-                document.getElementById('status').innerText = "Searching for Stranger...";
-            } catch (e) { alert("Please allow camera access!"); location.reload(); }
-        }
-
-        socket.on('matched', async (roomId) => {
-            currentRoomId = roomId;
-            document.getElementById('status').innerText = "Stranger Found!";
-            setupWebRTC();
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            socket.emit('signal', { offer, roomId: currentRoomId });
-        });
-
-        function setupWebRTC() {
-            if (pc) pc.close();
-            pc = new RTCPeerConnection(config);
-            localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-            pc.ontrack = (event) => { document.getElementById('remoteVideo').srcObject = event.streams[0]; };
-            pc.onicecandidate = (event) => {
-                if (event.candidate) socket.emit('signal', { candidate: event.candidate, roomId: currentRoomId });
-            };
-        }
-
-        socket.on('signal', async (data) => {
-            if (data.offer) {
-                setupWebRTC();
-                await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-                const answer = await pc.createAnswer();
-                await pc.setLocalDescription(answer);
-                socket.emit('signal', { answer, roomId: currentRoomId });
-            } else if (data.answer) {
-                await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-            } else if (data.candidate) {
-                try { await pc.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch(e) {}
-            }
-        });
-    </script>
-</body>
-</html>
+<style>
+    body { 
+        background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); 
+        color: #e0e0e0;
+    }
+    .video-box { 
+        border: none;
+        box-shadow: 0 0 20px rgba(0, 209, 255, 0.2);
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        margin: 10px;
+    }
+    #localVideo { 
+        border: 2px solid #00d1ff;
+        box-shadow: 0 0 15px #00d1ff;
+    }
+    #remoteVideo {
+        border: 2px solid #ff0055;
+        box-shadow: 0 0 15px #ff0055;
+    }
+    .btn {
+        transition: all 0.4s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .start-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 0 25px #00d1ff;
+    }
+</style>
