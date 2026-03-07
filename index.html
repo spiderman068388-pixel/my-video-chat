@@ -3,48 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OmeTV Clone - Mobile Fix</title>
+    <title>OmeTV Pro Clone</title>
     <style>
+        * { box-sizing: border-box; }
         body { 
-            background-color: #121212; color: white; margin: 0; padding: 0; 
-            font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; 
+            background-color: #0b0b0b; color: white; margin: 0; padding: 0; 
+            font-family: 'Segoe UI', Roboto, sans-serif; height: 100vh; display: flex; flex-direction: column; 
         }
+        /* Video Section */
         .video-grid { 
-            flex: 1; display: flex; flex-direction: column; background: #000;
+            flex: 1; display: flex; flex-direction: column; background: #000; position: relative;
         }
         .video-box { 
-            flex: 1; position: relative; border: 1px solid #333; overflow: hidden;
+            flex: 1; position: relative; border: 2px solid #1a1a1a; overflow: hidden; border-radius: 12px; margin: 4px;
         }
-        video { width: 100%; height: 100%; object-fit: cover; }
-        #localVideo { transform: scaleX(-1); }
+        video { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
+        #localVideo { transform: scaleX(-1); border: 2px solid #00d1ff; }
+        
+        /* Overlay UI */
+        .status-box {
+            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7); padding: 8px 20px; border-radius: 25px;
+            z-index: 10; border: 1px solid #333; font-size: 14px; font-weight: bold;
+        }
         .label { 
             position: absolute; bottom: 10px; left: 10px; 
-            background: rgba(0,0,0,0.6); padding: 4px 10px; border-radius: 4px; font-size: 12px;
+            background: rgba(0,0,0,0.6); padding: 5px 12px; border-radius: 6px; font-size: 12px;
         }
-        .status-bar {
-            position: absolute; top: 10px; width: 100%; text-align: center; z-index: 10;
-        }
-        .status-text {
-            background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 20px; font-size: 14px;
-        }
+
+        /* Controls Area */
         .controls { 
-            height: 80px; background: #1e1e1e; display: flex; 
-            justify-content: space-around; align-items: center; padding: 0 10px;
+            height: 100px; background: #181818; display: flex; 
+            justify-content: center; align-items: center; padding: 0 15px; gap: 12px;
+            border-top: 1px solid #333;
         }
         .btn { 
-            flex: 1; margin: 0 5px; height: 50px; border: none; 
-            border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer;
+            padding: 0 25px; height: 55px; border: none; 
+            border-radius: 15px; font-weight: bold; font-size: 16px; cursor: pointer;
+            transition: 0.3s; color: white;
         }
-        .start-btn { background: #0084ff; color: white; }
-        .next-btn { background: #28a745; color: white; }
-        
+        .start-btn { background: linear-gradient(135deg, #0084ff, #00d1ff); box-shadow: 0 4px 15px rgba(0,132,255,0.4); }
+        .next-btn { background: #28a745; }
+        .stop-btn { background: #dc3545; }
+        .btn:active { transform: scale(0.95); }
+
         @media (min-width: 768px) { .video-grid { flex-direction: row; } }
     </style>
 </head>
 <body>
-    <div class="status-bar">
-        <span class="status-text" id="status">Press START</span>
-    </div>
+    <div class="status-box" id="status">Ready to Start</div>
 
     <div class="video-grid">
         <div class="video-box">
@@ -53,13 +60,14 @@
         </div>
         <div class="video-box">
             <video id="localVideo" autoplay muted playsinline></video>
-            <div class="label">You (Me)</div>
+            <div class="label">You</div>
         </div>
     </div>
 
     <div class="controls">
         <button id="startBtn" class="btn start-btn" onclick="startMatching()">START</button>
         <button class="btn next-btn" onclick="location.reload()">NEXT</button>
+        <button class="btn stop-btn" onclick="location.reload()">STOP</button>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -69,17 +77,19 @@
         const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
         async function startMatching() {
-            document.getElementById('status').innerText = "Finding stranger...";
+            document.getElementById('status').innerText = "Connecting Camera...";
+            document.getElementById('startBtn').style.display = "none";
             try {
                 localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 document.getElementById('localVideo').srcObject = localStream;
                 socket.emit('start-match');
-            } catch (e) { alert("Camera allow karo bhai!"); }
+                document.getElementById('status').innerText = "Searching for Stranger...";
+            } catch (e) { alert("Please allow camera access!"); location.reload(); }
         }
 
         socket.on('matched', async (roomId) => {
             currentRoomId = roomId;
-            document.getElementById('status').innerText = "Connected!";
+            document.getElementById('status').innerText = "Stranger Found!";
             setupWebRTC();
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
