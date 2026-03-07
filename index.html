@@ -1,117 +1,78 @@
-<!DOCTYPE html>
-<html lang="hi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cyber OmeTV</title>
-    <style>
-        * { box-sizing: border-box; }
-        body { 
-            background: radial-gradient(circle, #1a1a2e 0%, #0f0c29 100%); 
-            color: #00d1ff; margin: 0; font-family: 'Segoe UI', sans-serif;
-            height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+<script>
+    const socket = io();
+    let localStream, pc, currentRoomId = null;
+
+    // Multiple servers taaki connection kabhi fail na ho
+    const config = { 
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
+            { urls: 'stun:stun.services.mozilla.com' }
+        ] 
+    };
+
+    async function startMatching() {
+        document.getElementById('status').innerText = "System: Syncing Bio-Data...";
+        try {
+            // Mobile par dono camera aur mic mangna zaroori hai
+            localStream = await navigator.mediaDevices.getUserMedia({ 
+                video: { width: { ideal: 640 }, height: { ideal: 480 } }, 
+                audio: true 
+            });
+            document.getElementById('localVideo').srcObject = localStream;
+            socket.emit('start-match');
+        } catch (e) { 
+            alert("Bhai, Camera aur Mic allow karna padega setting se!"); 
         }
-        #status { 
-            padding: 12px; text-align: center; font-size: 14px; font-weight: bold;
-            text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px #00d1ff;
-        }
-        .video-grid { flex: 1; display: flex; flex-direction: column; padding: 10px; gap: 10px; }
-        .video-box { 
-            flex: 1; position: relative; border-radius: 15px; overflow: hidden;
-            background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(0, 209, 255, 0.2);
-        }
-        video { width: 100%; height: 100%; object-fit: cover; }
+    }
+
+    socket.on('matched', async (roomId) => {
+        currentRoomId = roomId;
+        document.getElementById('status').innerText = "STRANGER LOCATED!";
+        setupWebRTC();
         
-        /* Neon Borders */
-        #remoteVideo { border: 2px solid #ff0055; box-shadow: inset 0 0 20px #ff0055; }
-        #localVideo { border: 2px solid #00d1ff; box-shadow: inset 0 0 20px #00d1ff; transform: scaleX(-1); }
+        // Match hone par Offer bhejna
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        socket.emit('signal', { offer, roomId: currentRoomId });
+    });
 
-        /* Scanning Effect */
-        .scan-line {
-            position: absolute; top: 0; left: 0; width: 100%; height: 3px;
-            background: #ff0055; box-shadow: 0 0 15px #ff0055;
-            animation: moveScan 2.5s linear infinite; z-index: 5;
-        }
-        @keyframes moveScan { 0% { top: 0; } 100% { top: 100%; } }
+    function setupWebRTC() {
+        if (pc) pc.close();
+        pc = new RTCPeerConnection(config);
 
-        .controls { 
-            height: 90px; display: flex; justify-content: center; align-items: center; 
-            gap: 15px; background: rgba(0,0,0,0.8); border-top: 2px solid #333;
-        }
-        .btn {
-            padding: 12px 25px; border: none; border-radius: 8px; font-weight: bold;
-            cursor: pointer; transition: 0.3s; text-transform: uppercase;
-        }
-        .start-btn { background: #00d1ff; color: #000; box-shadow: 0 0 15px #00d1ff; }
-        .next-btn { background: transparent; border: 1px solid #ff0055; color: #ff0055; }
-        
-        @media (min-width: 768px) { .video-grid { flex-direction: row; } }
-    </style>
-</head>
-<body>
-    <div id="status">System Online: Waiting for User</div>
-    <div class="video-grid">
-        <div class="video-box">
-            <div class="scan-line" id="scanner"></div>
-            <video id="remoteVideo" autoplay playsinline></video>
-        </div>
-        <div class="video-box">
-            <video id="localVideo" autoplay muted playsinline></video>
-        </div>
-    </div>
-    <div class="controls">
-        <button id="startBtn" class="btn start-btn" onclick="startMatching()">Connect</button>
-        <button class="btn next-btn" onclick="location.reload()">Skip</button>
-    </div>
+        // Local video tracks add karna
+        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io();
-        let localStream, pc, currentRoomId = null;
-        const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+        // Jab stranger ka video aaye
+        pc.ontrack = (event) => {
+            console.log("Remote video received!");
+            document.getElementById('remoteVideo').srcObject = event.streams[0];
+        };
 
-        async function startMatching() {
-            document.getElementById('status').innerText = "Accessing Bio-Stream...";
-            try {
-                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                document.getElementById('localVideo').srcObject = localStream;
-                socket.emit('start-match');
-            } catch (e) { alert("Camera access denied!"); }
-        }
-
-        socket.on('matched', async (roomId) => {
-            currentRoomId = roomId;
-            document.getElementById('status').innerText = "Stranger Located!";
-            document.getElementById('scanner').style.display = 'none';
-            setupWebRTC();
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            socket.emit('signal', { offer, roomId: currentRoomId });
-        });
-
-        function setupWebRTC() {
-            if (pc) pc.close();
-            pc = new RTCPeerConnection(config);
-            localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-            pc.ontrack = (e) => { document.getElementById('remoteVideo').srcObject = e.streams[0]; };
-            pc.onicecandidate = (e) => {
-                if (e.candidate) socket.emit('signal', { candidate: e.candidate, roomId: currentRoomId });
-            };
-        }
-
-        socket.on('signal', async (data) => {
-            if (data.offer) {
-                setupWebRTC();
-                await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-                const answer = await pc.createAnswer();
-                await pc.setLocalDescription(answer);
-                socket.emit('signal', { answer, roomId: currentRoomId });
-            } else if (data.answer) {
-                await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-            } else if (data.candidate) {
-                try { await pc.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch(e) {}
+        // Network info (ICE) exchange karna
+        pc.onicecandidate = (event) => {
+            if (event.candidate) {
+                socket.emit('signal', { candidate: event.candidate, roomId: currentRoomId });
             }
-        });
-    </script>
-</body>
-</html>
+        };
+    }
+
+    socket.on('signal', async (data) => {
+        if (!pc) setupWebRTC();
+
+        if (data.offer) {
+            await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            socket.emit('signal', { answer, roomId: currentRoomId });
+        } else if (data.answer) {
+            await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+        } else if (data.candidate) {
+            try {
+                await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+            } catch(e) { console.error("ICE Error", e); }
+        }
+    });
+</script>
