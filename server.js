@@ -12,67 +12,72 @@ app.get('/', (req, res) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-        <title>Cyber OmeTV Pro</title>
+        <title>Cyber OmeTV Pro - Slide Edition</title>
         <style>
-            * { box-sizing: border-box; margin: 0; padding: 0; }
+            * { box-sizing: border-box; margin: 0; padding: 0; touch-action: none; }
             body { 
                 background: #050510; color: #00f2ff; 
                 font-family: 'Segoe UI', sans-serif; height: 100vh;
                 display: flex; flex-direction: column; overflow: hidden;
             }
             
-            /* Status Bar */
             #status { 
                 height: 40px; display: flex; align-items: center; justify-content: center;
-                font-size: 12px; font-weight: bold; letter-spacing: 1px;
-                background: rgba(0,0,0,0.8); border-bottom: 1px solid #1a1a3a;
+                font-size: 12px; font-weight: bold; background: rgba(0,0,0,0.8);
+                border-bottom: 1px solid #1a1a3a; text-transform: uppercase;
             }
 
-            /* Video Grid - Gestures Support */
-            .video-grid { flex: 1; display: flex; flex-direction: column; padding: 10px; gap: 10px; position: relative; }
+            .video-grid { 
+                flex: 1; display: flex; flex-direction: column; padding: 10px; gap: 10px; 
+                position: relative; perspective: 1000px;
+            }
             @media (min-width: 768px) { .video-grid { flex-direction: row; padding: 20px; } }
 
             .video-box { 
                 flex: 1; position: relative; border-radius: 15px; overflow: hidden;
                 background: #000; border: 3px solid rgba(0, 242, 255, 0.2);
+                transition: transform 0.3s ease-out, opacity 0.3s ease-out;
             }
-            video { width: 100%; height: 100%; object-fit: cover; }
-            #remoteVideoBox { border-color: #ff0055; box-shadow: 0 0 20px rgba(255, 0, 85, 0.4); }
-            #localVideoBox { border-color: #00f2ff; box-shadow: 0 0 20px rgba(0, 209, 255, 0.4); }
+            
+            /* Neon Borders from SS1 */
+            #remoteVideoBox { border-color: #ff0055; box-shadow: 0 0 20px rgba(255, 0, 85, 0.3); z-index: 2; }
+            #localVideoBox { border-color: #00f2ff; box-shadow: 0 0 20px rgba(0, 242, 255, 0.3); }
+
+            video { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
             #localVideo { transform: scaleX(-1); }
 
-            /* SS Layout - Country & Gender Selectors */
+            /* Country & Gender Bar from SS */
             .selectors {
-                display: flex; justify-content: center; gap: 10px; padding: 10px;
-                background: rgba(10, 10, 26, 0.9); border-top: 1px solid #1a1a3a;
+                display: flex; justify-content: center; gap: 8px; padding: 12px;
+                background: #0a0a1a; border-top: 2px solid #1a1a3a;
             }
             .select-item {
-                background: #fff; color: #000; padding: 5px 15px; border-radius: 5px;
-                font-size: 11px; text-align: center; font-weight: bold; min-width: 80px;
+                background: #fff; color: #000; padding: 6px 12px; border-radius: 6px;
+                font-size: 10px; text-align: center; font-weight: bold; flex: 1; max-width: 120px;
             }
 
-            /* Buttons Section - Laptop Only via Media Query if needed, but keeping for both now */
             .controls { 
-                padding: 15px; display: flex; justify-content: center; 
-                gap: 10px; background: #050510; border-top: 1px solid #1a1a3a;
-                padding-bottom: env(safe-area-inset-bottom);
+                padding: 15px; display: flex; justify-content: center; gap: 10px;
+                background: #050510; padding-bottom: env(safe-area-inset-bottom);
             }
             .btn {
                 flex: 1; max-width: 150px; height: 50px; border: none; border-radius: 10px;
-                font-weight: bold; cursor: pointer; text-transform: uppercase;
-                transition: 0.2s; font-size: 14px;
+                font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 13px;
             }
             .next-btn { background: #2ecc71; color: #000; box-shadow: 0 0 15px #2ecc71; }
             .stop-btn { background: #ff3e3e; color: #fff; }
             .start-btn { background: #00f2ff; color: #000; box-shadow: 0 0 20px #00f2ff; }
 
-            .label { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 4px 8px; border-radius: 4px; font-size: 10px; z-index: 5; }
+            .label { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 4px 8px; border-radius: 4px; font-size: 10px; z-index: 10; }
+            
+            /* Slide Animation Class */
+            .slide-out { transform: translateX(-150%) rotate(-20deg) !important; opacity: 0; }
         </style>
     </head>
     <body>
-        <div id="status">CYBER SYSTEM: READY</div>
+        <div id="status">SYSTEM READY: SLIDE TO NEXT</div>
         
-        <div class="video-grid" id="touchArea">
+        <div class="video-grid" id="mainGrid">
             <div id="remoteVideoBox" class="video-box">
                 <video id="remoteVideo" autoplay playsinline></video>
                 <div class="label">STRANGER</div>
@@ -98,43 +103,50 @@ app.get('/', (req, res) => {
         <script>
             const socket = io();
             let localStream, pc, currentRoomId;
-            let touchstartX = 0;
-            let touchendX = 0;
+            let startX = 0;
 
-            // Swipe Gesture for Mobile
-            const touchArea = document.getElementById('touchArea');
-            touchArea.addEventListener('touchstart', e => { touchstartX = e.changedTouches[0].screenX; });
-            touchArea.addEventListener('touchend', e => { 
-                touchendX = e.changedTouches[0].screenX;
-                handleGesture();
+            // TOUCH SLIDE LOGIC (Mobile)
+            const remoteBox = document.getElementById('remoteVideoBox');
+            
+            remoteBox.addEventListener('touchstart', e => { startX = e.touches[0].clientX; });
+            remoteBox.addEventListener('touchmove', e => {
+                let moveX = e.touches[0].clientX - startX;
+                if(moveX < 0) remoteBox.style.transform = "translateX(" + moveX + "px) rotate(" + (moveX/20) + "deg)";
             });
-
-            function handleGesture() {
-                if (touchendX < touchstartX - 100) { // Swipe Left
+            remoteBox.addEventListener('touchend', e => {
+                let endX = e.changedTouches[0].clientX;
+                if (startX - endX > 120) { // If swiped far enough
                     nextMatch();
+                } else {
+                    remoteBox.style.transform = "translateX(0) rotate(0)";
                 }
-            }
+            });
 
             async function joinMatrix() {
                 try {
                     localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                     document.getElementById('localVideo').srcObject = localStream;
                     socket.emit('start-match');
-                    document.getElementById('status').innerText = "SCANNING...";
-                    document.getElementById('startBtn').innerText = "LIVE";
-                } catch(e) { alert("Camera Allow Karo Bhai!"); }
+                    document.getElementById('status').innerText = "SEARCHING...";
+                    document.getElementById('startBtn').innerText = "JOINED";
+                } catch(e) { alert("Camera Access Required!"); }
             }
 
             function nextMatch() {
-                if(pc) pc.close();
-                document.getElementById('remoteVideo').srcObject = null;
-                socket.emit('start-match');
-                document.getElementById('status').innerText = "SKIPPING... FINDING NEW";
+                remoteBox.classList.add('slide-out'); // Trigger Animation
+                setTimeout(() => {
+                    if(pc) pc.close();
+                    document.getElementById('remoteVideo').srcObject = null;
+                    socket.emit('start-match');
+                    remoteBox.classList.remove('slide-out');
+                    remoteBox.style.transform = "translateX(0) rotate(0)";
+                    document.getElementById('status').innerText = "FINDING NEXT...";
+                }, 300);
             }
 
             socket.on('matched', async (roomId) => {
                 currentRoomId = roomId;
-                document.getElementById('status').innerText = "CONNECTED!";
+                document.getElementById('status').innerText = "STRANGER FOUND!";
                 pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
                 localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
                 pc.ontrack = (e) => document.getElementById('remoteVideo').srcObject = e.streams[0];
