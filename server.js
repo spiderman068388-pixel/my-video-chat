@@ -12,78 +12,77 @@ app.get('/', (req, res) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-        <title>Cyber OmeTV Pro</title>
+        <title>Cyber OmeTV Pro Max</title>
         <style>
             * { box-sizing: border-box; margin: 0; padding: 0; }
             body { 
-                background: #050510; color: #00f2ff; 
-                font-family: 'Segoe UI', sans-serif; height: 100vh;
+                background: radial-gradient(circle, #1a1a2e 0%, #050510 100%); 
+                color: #00f2ff; font-family: 'Segoe UI', sans-serif; height: 100vh;
                 display: flex; flex-direction: column; overflow: hidden;
             }
             #status { 
                 height: 45px; display: flex; align-items: center; justify-content: center;
                 font-size: 12px; font-weight: bold; letter-spacing: 2px;
-                background: rgba(0,0,0,0.6); border-bottom: 1px solid #1a1a3a;
-                text-transform: uppercase;
+                background: rgba(0,0,0,0.7); border-bottom: 1px solid rgba(0, 242, 255, 0.2);
+                text-transform: uppercase; text-shadow: 0 0 10px #00f2ff;
             }
             .video-grid { flex: 1; display: flex; flex-direction: column; padding: 10px; gap: 10px; }
             @media (min-width: 768px) { .video-grid { flex-direction: row; padding: 20px; } }
 
             .video-box { 
-                flex: 1; position: relative; border-radius: 15px; overflow: hidden;
-                background: #000; border: 1px solid rgba(0, 242, 255, 0.2); max-height: 45%;
+                flex: 1; position: relative; border-radius: 20px; overflow: hidden;
+                background: #000; border: 2.5px solid rgba(0, 242, 255, 0.2); max-height: 45%;
+                box-shadow: 0 0 20px rgba(0,0,0,0.5);
             }
             @media (min-width: 768px) { .video-box { max-height: 100%; } }
 
             video { width: 100%; height: 100%; object-fit: cover; background: #000; }
-            #remoteVideo { border: 2px solid #ff0055; box-shadow: inset 0 0 20px rgba(255, 0, 85, 0.3); }
-            #localVideo { transform: scaleX(-1); border: 2px solid #00f2ff; }
+            /* SS1 Wala Neon Look */
+            #remoteVideo { border: 3px solid #ff0055; box-shadow: 0 0 25px rgba(255, 0, 85, 0.4); }
+            #localVideo { transform: scaleX(-1); border: 3px solid #00f2ff; box-shadow: 0 0 25px rgba(0, 242, 255, 0.4); }
 
-            /* Buttons Container */
+            /* SS2 Wala Button Setup in SS1 Style */
             .controls { 
                 padding: 15px; display: flex; justify-content: center; 
                 gap: 12px; background: #0a0a1a; border-top: 2px solid #1a1a3a;
                 padding-bottom: env(safe-area-inset-bottom);
             }
             .btn {
-                flex: 1; max-width: 150px; height: 50px; border: none; border-radius: 10px;
+                flex: 1; max-width: 140px; height: 55px; border: none; border-radius: 12px;
                 font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 13px;
-                transition: 0.2s; -webkit-tap-highlight-color: transparent;
+                transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
                 display: flex; align-items: center; justify-content: center;
             }
 
-            /* START - Blue Neon */
             .start-btn { 
                 background: #00f2ff; color: #000; 
-                box-shadow: 0 0 15px rgba(0, 242, 255, 0.5); 
+                box-shadow: 0 0 20px rgba(0, 242, 255, 0.6); 
             }
-            /* NEXT - Green Neon */
             .next-btn { 
                 background: #2ecc71; color: #000; 
-                box-shadow: 0 0 15px rgba(46, 204, 113, 0.5); 
+                box-shadow: 0 0 20px rgba(46, 204, 113, 0.6); 
                 display: none; 
             }
-            /* STOP - Red Neon */
             .stop-btn { 
                 background: #ff0055; color: white; 
-                box-shadow: 0 0 15px rgba(255, 0, 85, 0.5); 
+                box-shadow: 0 0 20px rgba(255, 0, 85, 0.6); 
                 display: none;
             }
             
-            .btn:active { transform: scale(0.92); }
-            .label { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 4px 10px; border-radius: 5px; font-size: 10px; border: 1px solid #333; z-index: 10; }
+            .btn:active { transform: scale(0.9); }
+            .label { position: absolute; top: 12px; left: 12px; background: rgba(0,0,0,0.7); padding: 5px 12px; border-radius: 6px; font-size: 10px; border: 1px solid #333; z-index: 10; color: #fff; }
         </style>
     </head>
     <body>
-        <div id="status">Welcome to Matrix - Press Start to Join</div>
+        <div id="status">NEON SYSTEM: IDLE</div>
         <div class="video-grid">
             <div class="video-box">
                 <video id="remoteVideo" autoplay playsinline></video>
-                <div class="label">STRANGER</div>
+                <div class="label">STRANGER SOURCE</div>
             </div>
             <div class="video-box">
                 <video id="localVideo" autoplay muted playsinline></video>
-                <div class="label">YOU</div>
+                <div class="label">LOCAL SOURCE</div>
             </div>
         </div>
         <div class="controls">
@@ -106,15 +105,15 @@ app.get('/', (req, res) => {
                     
                     document.getElementById('startBtn').style.display = 'none';
                     document.getElementById('stopBtn').style.display = 'flex';
-                    document.getElementById('status').innerText = "Searching for Subjects...";
-                } catch(e) { alert("Camera Permission required!"); }
+                    document.getElementById('status').innerText = "SEARCHING MATRIX...";
+                } catch(e) { alert("Camera Access Denied!"); }
             }
 
             function nextMatch() {
                 if(pc) pc.close();
                 document.getElementById('remoteVideo').srcObject = null;
                 socket.emit('start-match');
-                document.getElementById('status').innerText = "Finding Next Subject...";
+                document.getElementById('status').innerText = "SCANNING NEW SOURCE...";
             }
 
             function stopEverything() {
@@ -123,7 +122,7 @@ app.get('/', (req, res) => {
 
             socket.on('matched', async (roomId) => {
                 currentRoomId = roomId;
-                document.getElementById('status').innerText = "Subject Located!";
+                document.getElementById('status').innerText = "CONNECTION SECURED";
                 document.getElementById('nextBtn').style.display = 'flex';
                 
                 pc = new RTCPeerConnection(config);
