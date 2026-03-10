@@ -16,45 +16,53 @@ app.get('/', (req, res) => {
         <style>
             * { box-sizing: border-box; margin: 0; padding: 0; touch-action: none; }
             body { 
-                background: #000; color: #fff; font-family: 'Segoe UI', sans-serif; 
+                background: #000; color: #fff; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
                 height: 100vh; display: flex; flex-direction: column; overflow: hidden;
             }
-            #status { height: 35px; display: flex; align-items: center; justify-content: center; font-size: 11px; background: #0a0a1a; color: #00f2ff; font-weight: bold; border-bottom: 1px solid #1a1a3a; }
+            
+            /* Top Search Bar */
+            #status { height: 35px; display: flex; align-items: center; justify-content: center; font-size: 11px; background: #000; color: #00f2ff; font-weight: bold; border-bottom: 1px solid #1a1a3a; text-transform: uppercase; }
 
-            .video-grid { flex: 1; display: flex; flex-direction: column; padding: 10px; gap: 10px; position: relative; }
+            /* Video Display Area */
+            .video-grid { flex: 1; display: flex; flex-direction: column; padding: 10px; gap: 8px; position: relative; }
             @media (min-width: 768px) { .video-grid { flex-direction: row; } }
 
-            .video-box { flex: 1; position: relative; border-radius: 15px; overflow: hidden; background: #111; transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+            .video-box { flex: 1; position: relative; border-radius: 12px; overflow: hidden; background: #111; transition: transform 0.3s ease; }
             
-            /* SS Style Neon Borders */
-            #remoteVideoBox { border: 3px solid #ff0055; box-shadow: 0 0 20px rgba(255, 0, 85, 0.4); z-index: 2; }
-            #localVideoBox { border: 3px solid #00f2ff; box-shadow: 0 0 20px rgba(0, 242, 255, 0.4); }
+            /* SS1 Style Neon Borders */
+            #remoteVideoBox { border: 3.5px solid #ff0055; box-shadow: 0 0 15px rgba(255, 0, 85, 0.4); z-index: 2; }
+            #localVideoBox { border: 3.5px solid #00f2ff; box-shadow: 0 0 15px rgba(0, 242, 255, 0.4); }
             
-            video { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+            video { width: 100%; height: 100%; object-fit: cover; }
             #localVideo { transform: scaleX(-1); }
 
-            /* Bottom Panel - As per SS 000853 */
-            .bottom-bar { background: #fff; padding: 10px; display: flex; flex-direction: column; gap: 8px; border-top-left-radius: 15px; border-top-right-radius: 15px; }
+            /* THE BUTTONS YOU WANTED (Exact SS 001457 Style) */
+            .bottom-panel { background: #f2f2f2; padding: 12px; display: flex; flex-direction: column; gap: 10px; border-top: 1px solid #ccc; }
             
-            .selectors { display: flex; justify-content: center; gap: 5px; }
+            .selectors { display: flex; justify-content: center; gap: 8px; }
             .select-item { 
-                background: #f1f1f1; color: #333; padding: 5px; border-radius: 6px; 
-                flex: 1; text-align: center; font-size: 10px; border: 1px solid #ddd; font-weight: bold;
+                background: #fff; color: #333; padding: 8px; border-radius: 6px; 
+                flex: 1; text-align: center; font-size: 11px; border: 1px solid #ddd; font-weight: bold;
+                line-height: 1.2;
             }
+            .select-item b { color: #007aff; display: block; font-size: 12px; }
 
-            .controls { display: flex; gap: 5px; justify-content: center; width: 100%; }
-            .btn { flex: 1; height: 48px; border: none; border-radius: 10px; font-weight: bold; font-size: 11px; cursor: pointer; text-transform: uppercase; }
+            .controls { display: flex; gap: 8px; justify-content: center; width: 100%; }
+            .btn { flex: 1; height: 50px; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; text-transform: uppercase; }
             
-            .next-btn { background: #34c759; color: #fff; }
-            .stop-btn { background: #ff3b30; color: #fff; }
-            .start-btn { background: #007aff; color: #fff; box-shadow: 0 4px 10px rgba(0,122,255,0.4); }
+            .stop-btn { background: #eb4d4b; color: #fff; }
+            .next-btn { background: #6ab04c; color: #fff; }
+            .start-btn { background: #0984e3; color: #fff; flex: 1.5; box-shadow: 0 4px 0 #0652dd; }
+            .start-btn:active { transform: translateY(2px); box-shadow: none; }
 
-            .label { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.6); padding: 3px 8px; border-radius: 5px; font-size: 10px; z-index: 10; }
-            .slide-away { transform: translateX(-150%) rotate(-15deg); opacity: 0; }
+            .label { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.6); padding: 3px 8px; border-radius: 4px; font-size: 9px; z-index: 10; color: #fff; }
+            
+            /* Slide Animation */
+            .slide-away { transform: translateX(-150%) rotate(-10deg); opacity: 0; }
         </style>
     </head>
     <body>
-        <div id="status">CYBER SEARCH ACTIVE</div>
+        <div id="status">Searching for strangers...</div>
         
         <div class="video-grid">
             <div id="remoteVideoBox" class="video-box">
@@ -67,14 +75,14 @@ app.get('/', (req, res) => {
             </div>
         </div>
 
-        <div class="bottom-bar">
+        <div class="bottom-panel">
             <div class="selectors">
-                <div class="select-item">COUNTRY<br><span style="color:#007aff">INDIA 🇮🇳</span></div>
-                <div class="select-item">I AM<br><span style="color:#007aff">MALE 👦</span></div>
+                <div class="select-item">COUNTRY <b>INDIA 🇮🇳</b></div>
+                <div class="select-item">I AM <b>MALE 👦</b></div>
             </div>
             <div class="controls">
-                <button class="btn next-btn" onclick="nextMatch()">NEXT</button>
                 <button class="btn stop-btn" onclick="location.reload()">STOP</button>
+                <button class="btn next-btn" onclick="nextMatch()">NEXT</button>
                 <button id="startBtn" class="btn start-btn" onclick="joinMatrix()">START</button>
             </div>
         </div>
@@ -86,14 +94,14 @@ app.get('/', (req, res) => {
             let startX = 0;
             const remoteBox = document.getElementById('remoteVideoBox');
 
-            // Slide Logic (Touch)
+            // Slide Logic (Touch Move)
             remoteBox.addEventListener('touchstart', e => { startX = e.touches[0].clientX; });
             remoteBox.addEventListener('touchmove', e => {
                 let x = e.touches[0].clientX - startX;
-                if(x < 0) remoteBox.style.transform = "translateX("+x+"px) rotate("+(x/35)+"deg)";
+                if(x < 0) remoteBox.style.transform = "translateX("+x+"px) rotate("+(x/40)+"deg)";
             });
             remoteBox.addEventListener('touchend', e => {
-                if (startX - e.changedTouches[0].clientX > 100) nextMatch();
+                if (startX - e.changedTouches[0].clientX > 120) nextMatch();
                 else remoteBox.style.transform = "none";
             });
 
@@ -102,8 +110,9 @@ app.get('/', (req, res) => {
                     localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                     document.getElementById('localVideo').srcObject = localStream;
                     socket.emit('start-match');
+                    document.getElementById('status').innerText = "Connecting...";
                     document.getElementById('startBtn').innerText = "LIVE";
-                } catch(e) { alert("Camera Access Required!"); }
+                } catch(e) { alert("Please allow camera access!"); }
             }
 
             function nextMatch() {
@@ -119,6 +128,7 @@ app.get('/', (req, res) => {
 
             socket.on('matched', async (roomId) => {
                 currentRoomId = roomId;
+                document.getElementById('status').innerText = "Stranger found!";
                 pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
                 localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
                 pc.ontrack = (e) => document.getElementById('remoteVideo').srcObject = e.streams[0];
