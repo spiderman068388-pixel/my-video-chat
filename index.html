@@ -1,55 +1,40 @@
-<script>
-    const socket = io();
-    let localStream, pc, currentRoomId = null;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmeTV Video Chat — Omegle</title>
+    <link rel="stylesheet" href="style.css?v=2.0">
+</head>
+<body>
+    <div class="main-wrapper">
+        <div class="video-section">
+            <div class="video-container stranger-box">
+                <img src="https://ometv.chat/assets/img/ometv-logo.png" alt="OmeTV" class="placeholder-logo">
+                <div class="volume-bar"></div>
+            </div>
+            <div class="video-container you-box">
+                <div class="spinner"></div>
+            </div>
+        </div>
 
-    // Ye servers video connect karne mein madad karenge
-    const config = { 
-        iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-            { urls: 'stun:stun2.l.google.com:19302' }
-        ] 
-    };
-
-    async function startMatching() {
-        document.getElementById('status').innerText = "Accessing Camera...";
-        try {
-            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            document.getElementById('localVideo').srcObject = localStream;
-            socket.emit('start-match');
-        } catch (e) { alert("Camera allow karo bhai!"); }
-    }
-
-    socket.on('matched', async (roomId) => {
-        currentRoomId = roomId;
-        document.getElementById('status').innerText = "Stranger Located!";
-        setupWebRTC();
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        socket.emit('signal', { offer, roomId: currentRoomId });
-    });
-
-    function setupWebRTC() {
-        if (pc) pc.close();
-        pc = new RTCPeerConnection(config);
-        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-        pc.ontrack = (e) => { document.getElementById('remoteVideo').srcObject = e.streams[0]; };
-        pc.onicecandidate = (e) => {
-            if (e.candidate) socket.emit('signal', { candidate: e.candidate, roomId: currentRoomId });
-        };
-    }
-
-    socket.on('signal', async (data) => {
-        if (!pc) setupWebRTC();
-        if (data.offer) {
-            await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-            socket.emit('signal', { answer, roomId: currentRoomId });
-        } else if (data.answer) {
-            await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-        } else if (data.candidate) {
-            try { await pc.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch(e) {}
-        }
-    });
-</script>
+        <div class="bottom-bar">
+            <div class="controls-left">
+                <button id="startBtn" class="btn start-green">Start</button>
+                <button id="stopBtn" class="btn stop-red">Stop</button>
+                <div class="input-box">Country 🇵🇭</div>
+                <div class="input-box">I am 👦</div>
+            </div>
+            <div class="chat-area">
+                <div class="chat-hint">By pressing "Start", you agree to our <u>rules</u>. Rule violators will be banned.</div>
+                <div class="chat-input-wrapper">
+                    <input type="text" placeholder="Write a message" id="msgInput">
+                    <span class="emoji-btn">😊</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
