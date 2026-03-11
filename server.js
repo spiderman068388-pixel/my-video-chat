@@ -1,20 +1,20 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const path = require('path');
+const path = require('path'); // Ye line path setup karti hai
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Ye line sabse zaroori hai - ye aapki files (index, style, script) ko load karegi
-app.use(express.static(__path.join(__dirname, '/')));
+// Sabhi static files (css, js, images) ko load karne ke liye
+app.use(express.static(path.join(__dirname, '/')));
 
+// Sirf index.html file ko serve karne ke liye
 app.get('/', (req, res) => {
-    res.sendFile(__path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Basic Socket connection for later
 io.on('connection', (socket) => {
     console.log('A user connected');
 });
