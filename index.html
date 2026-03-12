@@ -1,61 +1,52 @@
-<!DOCTYPE html>
-<html lang="hi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OmeTV Clone</title>
-    <style>
-        /* CSS YAHI PAR HAI - AB YE KABHI NAHI BIGDEGA */
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
-        body { background: #f0f0f0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        .video-grid { flex: 1; display: flex; background: #000; }
-        .video-box { flex: 1; border: 1px solid #333; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        .watermark { position: absolute; top: 10px; left: 10px; color: white; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 5px; font-size: 12px; }
-        .bottom-bar { height: 140px; background: white; display: flex; padding: 15px; border-top: 1px solid #ddd; }
-        .btns { display: flex; gap: 10px; }
-        .c-btn { width: 90px; height: 90px; border-radius: 20px; border: none; font-weight: bold; font-size: 18px; color: white; cursor: pointer; }
-        .start { background: #58d68d; box-shadow: 0 5px 0 #2d9658; }
-        .stop { background: #f1948a; box-shadow: 0 5px 0 #c0392b; }
-        .chat-area { flex: 1; margin-left: 20px; border-left: 1px solid #eee; padding-left: 20px; }
-        input { width: 100%; padding: 10px; border: none; border-bottom: 2px solid #eee; outline: none; font-size: 16px; }
-        video { width: 100%; height: 100%; object-fit: cover; }
-        @media (max-width: 600px) { .video-grid { flex-direction: column; } .bottom-bar { height: auto; flex-direction: column; } }
-    </style>
-</head>
-<body>
-    <div class="video-grid">
-        <div class="video-box" id="remoteVideoBox"><div class="watermark">Stranger</div><img src="https://ometv.chat/assets/img/ometv-logo.png" width="150" style="opacity:0.5"></div>
-        <div class="video-box" id="localVideoBox"><div class="watermark">You</div></div>
-    </div>
-    <div class="bottom-bar">
-        <div class="btns">
-            <button class="c-btn start" id="startBtn">Start</button>
-            <button class="c-btn stop" onclick="location.reload()">Stop</button>
-        </div>
-        <div class="chat-area">
-            <p style="color:#ccc; font-size:12px; margin-bottom:10px;">Please follow the rules. Be respectful.</p>
-            <input type="text" placeholder="Write a message...">
-        </div>
-    </div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    const startBtn = document.getElementById('startBtn');
+    const localBox = document.getElementById('localVideoBox');
+    const remoteBox = document.getElementById('remoteVideoBox');
+    let stream;
+    let peerConnection;
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        // JAVASCRIPT BHI YAHI PAR HAI
-        const startBtn = document.getElementById('startBtn');
-        const localBox = document.getElementById('localVideoBox');
-        let stream;
+    // WebRTC configuration
+    const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
-        startBtn.onclick = async () => {
-            try {
-                if(!stream) {
-                    stream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
-                    localBox.innerHTML += '<video id="v" autoplay muted playsinline></video>';
-                    document.getElementById('v').srcObject = stream;
-                }
-                startBtn.innerText = "Searching";
-                startBtn.style.background = "#f39c12";
-            } catch(e) { alert("Camera allow karo bhai!"); }
+    startBtn.onclick = async () => {
+        try {
+            if(!stream) {
+                // 1. Camera access
+                stream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
+                localBox.innerHTML = '<div class="watermark">You</div><video id="v" autoplay muted playsinline></video>';
+                document.getElementById('v').srcObject = stream;
+            }
+            
+            startBtn.innerText = "Searching...";
+            startBtn.style.background = "#f39c12";
+            
+            // 2. Server ko bolna ki partner dhoondho
+            socket.emit('find-partner');
+        } catch(e) { alert("Bhai camera allow karo!"); }
+    };
+
+    // Jab partner mil jaye
+    socket.on('partner-found', async () => {
+        startBtn.innerText = "Next";
+        startBtn.style.background = "#58d68d";
+        console.log("Stranger connected!");
+        
+        // Yahan se asli video exchange shuru hoga
+        setupWebRTC();
+    });
+
+    function setupWebRTC() {
+        peerConnection = new RTCPeerConnection(config);
+        
+        // Apni video track add karna
+        stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+
+        // Jab stranger ki video aaye
+        peerConnection.ontrack = (event) => {
+            remoteBox.innerHTML = '<div class="watermark">Stranger</div><video id="remoteV" autoplay playsinline></video>';
+            document.getElementById('remoteV').srcObject = event.streams[0];
         };
-    </script>
-</body>
-</html>
+    }
+</script>
