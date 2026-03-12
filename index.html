@@ -2,34 +2,36 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OmeTV Video Chat — Omegle</title>
-    <link rel="stylesheet" <link rel="stylesheet" href="./style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OmeTV Clone</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="main-wrapper">
-        <div class="video-section">
-            <div class="video-container stranger-box">
-                <img src="https://ometv.chat/assets/img/ometv-logo.png" alt="OmeTV" class="placeholder-logo">
-                <div class="volume-bar"></div>
+    <div class="main-container">
+        <div class="video-grid">
+            <div class="video-box stranger-video">
+                <img src="https://ometv.chat/assets/img/ometv-logo.png" alt="OmeTV" class="logo-placeholder">
+                <div class="watermark">Stranger</div>
             </div>
-            <div class="video-container you-box">
-                <div class="spinner"></div>
+            <div class="video-box my-video">
+                <div class="loading-spinner" id="spinner"></div>
+                <div id="video-container"></div>
+                <div class="watermark">You</div>
             </div>
         </div>
 
         <div class="bottom-bar">
-            <div class="controls-left">
-                <button id="startBtn" class="btn start-green">Start</button>
-                <button id="stopBtn" class="btn stop-red">Stop</button>
-                <div class="input-box">Country 🇵🇭</div>
-                <div class="input-box">I am 👦</div>
+            <div class="action-buttons">
+                <button id="startBtn" class="control-btn start-green">Start</button>
+                <button id="stopBtn" class="control-btn stop-red">Stop</button>
+                <div class="selector-box">Country 🇮🇳</div>
+                <div class="selector-box">I am 👦</div>
             </div>
-            <div class="chat-area">
-                <div class="chat-hint">By pressing "Start", you agree to our <u>rules</u>. Rule violators will be banned.</div>
-                <div class="chat-input-wrapper">
-                    <input type="text" placeholder="Write a message" id="msgInput">
-                    <span class="emoji-btn">😊</span>
+            <div class="chat-container">
+                <div class="rules-text">Please follow the rules. Be respectful to others.</div>
+                <div class="input-wrapper">
+                    <input type="text" id="chatInput" placeholder="Write a message...">
+                    <span class="emoji-icon">😊</span>
                 </div>
             </div>
         </div>
@@ -38,5 +40,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-
-
