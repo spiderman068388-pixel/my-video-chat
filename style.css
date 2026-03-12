@@ -1,41 +1,37 @@
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Arial', sans-serif; }
-body, html { height: 100%; background: #f0f0f0; overflow: hidden; }
+const socket = io(); // Server se connect hona
+const startBtn = document.getElementById('startBtn');
+const stopBtn = document.getElementById('stopBtn');
+const videoContainer = document.getElementById('video-container');
 
-.main-container { display: flex; flex-direction: column; height: 100vh; }
+let localStream;
 
-/* Video Grid Area */
-.video-grid { flex: 1; display: flex; background: #000; gap: 2px; }
-.video-box { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; background: #222; }
+// 1. Camera Start karna aur Partner dhoondhna
+startBtn.onclick = async () => {
+    try {
+        if (!localStream) {
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            videoContainer.innerHTML = '<video id="myVideo" autoplay muted playsinline style="width:100%; height:100%; object-fit:cover; border-radius:15px;"></video>';
+            document.getElementById('myVideo').srcObject = localStream;
+        }
+        
+        startBtn.innerText = "Searching...";
+        // Server ko bolna ki partner dhoondho
+        socket.emit('find-partner');
+        
+    } catch (err) {
+        alert("Camera permission allow karo bhai!");
+    }
+};
 
-.logo-placeholder { width: 180px; opacity: 0.7; }
-.watermark { position: absolute; top: 10px; left: 10px; color: white; background: rgba(0,0,0,0.4); padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+// 2. Jab Partner mil jaye
+socket.on('partner-found', () => {
+    startBtn.innerText = "Next";
+    console.log("Partner mil gaya!");
+    // Yahan hum future mein WebRTC video stream add karenge
+    alert("Partner Found! Connecting..."); 
+});
 
-/* Spinner */
-.loading-spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite; }
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-/* Bottom Control Bar */
-.bottom-bar { height: 140px; background: #fff; border-top: 1px solid #ddd; display: flex; padding: 15px; }
-
-.action-buttons { display: flex; gap: 10px; }
-
-.control-btn { width: 100px; height: 100px; border-radius: 18px; border: none; font-size: 20px; font-weight: bold; color: white; cursor: pointer; transition: 0.2s; }
-.start-green { background: #58d68d; box-shadow: 0 6px 0 #45a069; }
-.start-green:active { transform: translateY(4px); box-shadow: 0 2px 0 #45a069; }
-.stop-red { background: #f1948a; box-shadow: 0 6px 0 #c0392b; opacity: 0.8; }
-
-.selector-box { width: 100px; height: 100px; background: #f8f9f9; border: 1px solid #ebedef; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 14px; text-align: center; color: #5d6d7e; }
-
-/* Chat Area */
-.chat-container { flex: 1; margin-left: 20px; display: flex; flex-direction: column; }
-.rules-text { font-size: 12px; color: #abb2b9; background: #fdfefe; border: 1px solid #f2f3f4; padding: 8px; border-radius: 8px; margin-bottom: 10px; }
-.input-wrapper { position: relative; border-bottom: 1px solid #eee; padding: 5px 0; }
-#chatInput { width: 100%; border: none; outline: none; font-size: 16px; }
-.emoji-icon { position: absolute; right: 0; cursor: pointer; }
-
-/* Mobile View */
-@media (max-width: 600px) {
-    .video-grid { flex-direction: column; }
-    .bottom-bar { height: auto; flex-direction: column; gap: 10px; }
-    .control-btn, .selector-box { width: 70px; height: 70px; font-size: 14px; }
-}
+// 3. Stop logic
+stopBtn.onclick = () => {
+    location.reload(); // Simple refresh for reset
+};
