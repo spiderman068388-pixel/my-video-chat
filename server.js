@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 const path = require('path');
 
-// Ye line CSS aur JS files ko dhoondhne mein madad karegi
+// Static files ko dhoondhne ke liye (style.css, script.js)
 app.use(express.static(__dirname));
 
 app.get('/', (req, res) => {
@@ -11,5 +11,5 @@ app.get('/', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`App is live on port ${PORT}`);
 });
