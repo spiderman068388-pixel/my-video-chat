@@ -1,42 +1,61 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>OmeTV Clone</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        /* CSS YAHI PAR HAI - AB YE KABHI NAHI BIGDEGA */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+        body { background: #f0f0f0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        .video-grid { flex: 1; display: flex; background: #000; }
+        .video-box { flex: 1; border: 1px solid #333; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .watermark { position: absolute; top: 10px; left: 10px; color: white; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 5px; font-size: 12px; }
+        .bottom-bar { height: 140px; background: white; display: flex; padding: 15px; border-top: 1px solid #ddd; }
+        .btns { display: flex; gap: 10px; }
+        .c-btn { width: 90px; height: 90px; border-radius: 20px; border: none; font-weight: bold; font-size: 18px; color: white; cursor: pointer; }
+        .start { background: #58d68d; box-shadow: 0 5px 0 #2d9658; }
+        .stop { background: #f1948a; box-shadow: 0 5px 0 #c0392b; }
+        .chat-area { flex: 1; margin-left: 20px; border-left: 1px solid #eee; padding-left: 20px; }
+        input { width: 100%; padding: 10px; border: none; border-bottom: 2px solid #eee; outline: none; font-size: 16px; }
+        video { width: 100%; height: 100%; object-fit: cover; }
+        @media (max-width: 600px) { .video-grid { flex-direction: column; } .bottom-bar { height: auto; flex-direction: column; } }
+    </style>
 </head>
 <body>
-    <div class="main-container">
-        <div class="video-grid">
-            <div class="video-box stranger-video">
-                <img src="https://ometv.chat/assets/img/ometv-logo.png" alt="OmeTV" class="logo-placeholder">
-                <div class="watermark">Stranger</div>
-            </div>
-            <div class="video-box my-video">
-                <div class="loading-spinner" id="spinner"></div>
-                <div id="video-container"></div>
-                <div class="watermark">You</div>
-            </div>
+    <div class="video-grid">
+        <div class="video-box" id="remoteVideoBox"><div class="watermark">Stranger</div><img src="https://ometv.chat/assets/img/ometv-logo.png" width="150" style="opacity:0.5"></div>
+        <div class="video-box" id="localVideoBox"><div class="watermark">You</div></div>
+    </div>
+    <div class="bottom-bar">
+        <div class="btns">
+            <button class="c-btn start" id="startBtn">Start</button>
+            <button class="c-btn stop" onclick="location.reload()">Stop</button>
         </div>
-
-        <div class="bottom-bar">
-            <div class="action-buttons">
-                <button id="startBtn" class="control-btn start-green">Start</button>
-                <button id="stopBtn" class="control-btn stop-red">Stop</button>
-                <div class="selector-box">Country 🇮🇳</div>
-                <div class="selector-box">I am 👦</div>
-            </div>
-            <div class="chat-container">
-                <div class="rules-text">Please follow the rules. Be respectful to others.</div>
-                <div class="input-wrapper">
-                    <input type="text" id="chatInput" placeholder="Write a message...">
-                    <span class="emoji-icon">😊</span>
-                </div>
-            </div>
+        <div class="chat-area">
+            <p style="color:#ccc; font-size:12px; margin-bottom:10px;">Please follow the rules. Be respectful.</p>
+            <input type="text" placeholder="Write a message...">
         </div>
     </div>
+
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js"></script>
+    <script>
+        // JAVASCRIPT BHI YAHI PAR HAI
+        const startBtn = document.getElementById('startBtn');
+        const localBox = document.getElementById('localVideoBox');
+        let stream;
+
+        startBtn.onclick = async () => {
+            try {
+                if(!stream) {
+                    stream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
+                    localBox.innerHTML += '<video id="v" autoplay muted playsinline></video>';
+                    document.getElementById('v').srcObject = stream;
+                }
+                startBtn.innerText = "Searching";
+                startBtn.style.background = "#f39c12";
+            } catch(e) { alert("Camera allow karo bhai!"); }
+        };
+    </script>
 </body>
 </html>
