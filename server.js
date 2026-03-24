@@ -10,46 +10,40 @@ app.get('/', (req, res) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OmeTV Premium Clone</title>
+    <title>Cyber OmeTV Global</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, sans-serif; }
         body { background: #f0f2f5; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-        /* Video Section */
         .video-container { flex: 1; display: flex; background: #000; gap: 2px; position: relative; }
         .v-box { flex: 1; position: relative; background: #1a1a1a; display: flex; align-items: center; justify-content: center; }
         video { width: 100%; height: 100%; object-fit: cover; }
         #localVideo { transform: scaleX(-1); }
         .tag { position: absolute; top: 15px; left: 15px; background: rgba(0,0,0,0.6); color: #fff; padding: 5px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; z-index: 5; }
 
-        /* Chat Overlay */
         #chat-display { position: absolute; bottom: 15px; left: 15px; right: 15px; max-height: 150px; overflow-y: auto; z-index: 10; display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
         .msg { background: rgba(255,255,255,0.95); color: #222; padding: 8px 14px; border-radius: 18px; font-size: 14px; align-self: flex-start; pointer-events: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.15); max-width: 80%; }
 
-        /* Navigation Bar (Premium Look) */
         .bottom-nav { background: #fff; height: 120px; display: flex; align-items: center; padding: 0 20px; gap: 12px; border-top: 1px solid #eee; }
         
-        .btn-main { width: 90px; height: 90px; border-radius: 25px; border: none; cursor: pointer; font-weight: 800; transition: 0.2s; font-size: 16px; color: white; display: flex; align-items: center; justify-content: center; }
+        .btn-main { width: 85px; height: 85px; border-radius: 25px; border: none; cursor: pointer; font-weight: 800; transition: 0.2s; font-size: 16px; color: white; display: flex; align-items: center; justify-content: center; }
         .start { background: #58d68d; box-shadow: 0 6px 0 #2d9658; }
         .start:active { transform: translateY(3px); box-shadow: 0 3px 0 #2d9658; }
         .stop { background: #f1948a; box-shadow: 0 6px 0 #c0392b; }
 
-        /* Fixed Option Boxes */
-        .option-box { width: 90px; height: 90px; background: #fdfdfd; border: 1.5px solid #f0f0f0; border-radius: 25px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; transition: 0.2s; }
-        .option-box:hover { background: #f8f9fa; }
+        .option-box { width: 90px; height: 90px; background: #fdfdfd; border: 1.5px solid #f0f0f0; border-radius: 25px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; }
         .option-box span { font-size: 10px; color: #bbb; text-transform: uppercase; margin-bottom: 5px; font-weight: bold; }
-        .option-box b { font-size: 14px; color: #444; text-align: center; }
+        .option-box b { font-size: 13px; color: #444; text-align: center; white-space: nowrap; overflow: hidden; max-width: 80px; }
         .option-box select { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 2; }
 
-        /* Message Input */
         .chat-area { flex: 1; margin-left: 10px; }
-        .msg-input { width: 100%; padding: 18px; border-radius: 20px; border: none; background: #f3f5f7; outline: none; font-size: 16px; transition: 0.2s; }
-        .msg-input:focus { background: #ebedef; }
+        .msg-input { width: 100%; padding: 18px; border-radius: 20px; border: none; background: #f3f5f7; outline: none; font-size: 16px; }
 
         @media (max-width: 600px) {
             .video-container { flex-direction: column; }
-            .btn-main, .option-box { width: 70px; height: 70px; border-radius: 18px; font-size: 14px; }
-            .bottom-nav { height: 100px; padding: 10px; }
+            .btn-main, .option-box { width: 65px; height: 65px; border-radius: 18px; font-size: 13px; }
+            .bottom-nav { height: 100px; padding: 10px; gap: 8px; }
+            .option-box b { font-size: 11px; }
         }
     </style>
 </head>
@@ -69,22 +63,37 @@ app.get('/', (req, res) => {
 
         <div class="option-box">
             <span>Country</span>
-            <b id="cDisplay">India 🇮🇳</b>
+            <b id="cDisplay">Loading...</b>
             <select id="cSelect">
-                <option value="IN">India 🇮🇳</option>
-                <option value="US">USA 🇺🇸</option>
-                <option value="RU">Russia 🇷🇺</option>
-                <option value="BR">Brazil 🇧🇷</option>
                 <option value="ALL">World 🌐</option>
-            </select>
+                <option value="AF">Afghanistan 🇦🇫</option><option value="AL">Albania 🇦🇱</option><option value="DZ">Algeria 🇩🇿</option>
+                <option value="AR">Argentina 🇦🇷</option><option value="AU">Australia 🇦🇺</option><option value="AT">Austria 🇦🇹</option>
+                <option value="BD">Bangladesh 🇧🇩</option><option value="BE">Belgium 🇧🇪</option><option value="BR">Brazil 🇧🇷</option>
+                <option value="CA">Canada 🇨🇦</option><option value="CN">China 🇨🇳</option><option value="CO">Colombia 🇨🇴</option>
+                <option value="DK">Denmark 🇩🇰</option><option value="EG">Egypt 🇪🇬</option><option value="FR">France 🇫🇷</option>
+                <option value="DE">Germany 🇩🇪</option><option value="GR">Greece 🇬🇷</option><option value="HK">Hong Kong 🇭🇰</option>
+                <option value="IN" selected>India 🇮🇳</option><option value="ID">Indonesia 🇮🇩</option><option value="IR">Iran 🇮🇷</option>
+                <option value="IQ">Iraq 🇮🇶</option><option value="IE">Ireland 🇮🇪</option><option value="IL">Israel 🇮🇱</option>
+                <option value="IT">Italy 🇮🇹</option><option value="JP">Japan 🇯🇵</option><option value="MY">Malaysia 🇲🇾</option>
+                <option value="MX">Mexico 🇲🇽</option><option value="NP">Nepal 🇳🇵</option><option value="NL">Netherlands 🇳🇱</option>
+                <option value="NZ">New Zealand 🇳🇿</option><option value="NO">Norway 🇳🇴</option><option value="PK">Pakistan 🇵🇰</option>
+                <option value="PH">Philippines 🇵🇭</option><option value="PL">Poland 🇵🇱</option><option value="PT">Portugal 🇵🇹</option>
+                <option value="RU">Russia 🇷🇺</option><option value="SA">Saudi Arabia 🇸🇦</option><option value="SG">Singapore 🇸🇬</option>
+                <option value="ZA">South Africa 🇿🇦</option><option value="KR">South Korea 🇰🇷</option><option value="ES">Spain 🇪🇸</option>
+                <option value="LK">Sri Lanka 🇱🇰</option><option value="SE">Sweden 🇸🇪</option><option value="CH">Switzerland 🇨🇭</option>
+                <option value="TH">Thailand 🇹🇭</option><option value="TR">Turkey 🇹🇷</option><option value="UA">Ukraine 🇺🇦</option>
+                <option value="AE">UAE 🇦🇪</option><option value="GB">UK 🇬🇧</option><option value="US">USA 🇺🇸</option>
+                <option value="VN">Vietnam 🇻🇳</option>
+                </select>
         </div>
 
         <div class="option-box">
             <span>I am</span>
-            <b id="gDisplay">Boy 👦</b>
+            <b id="gDisplay">Boy 👨</b>
             <select id="gSelect">
-                <option value="male">Boy 👦</option>
-                <option value="female">Girl 👧</option>
+                <option value="male">Boy 👨</option>
+                <option value="female">Girl 👩</option>
+                <option value="couple">Couple 👫</option>
             </select>
         </div>
 
@@ -100,21 +109,35 @@ app.get('/', (req, res) => {
         const gSelect = document.getElementById('gSelect'), gDisplay = document.getElementById('gDisplay');
         const chatInput = document.getElementById('chatInput'), chatDisplay = document.getElementById('chat-display');
 
-        // Sync dropdown labels
-        cSelect.onchange = () => cDisplay.innerText = cSelect.options[cSelect.selectedIndex].text;
-        gSelect.onchange = () => gDisplay.innerText = gSelect.options[gSelect.selectedIndex].text;
+        async function autoDetect() {
+            try {
+                const res = await fetch('https://ipapi.co/json/');
+                const data = await res.json();
+                if(data.country_code) {
+                    cSelect.value = data.country_code;
+                }
+            } catch(e) { console.log("Auto-detect failed"); }
+            updateLabels();
+        }
 
-        // Chat logic
+        function updateLabels() {
+            cDisplay.innerText = cSelect.options[cSelect.selectedIndex].text;
+            gDisplay.innerText = gSelect.options[gSelect.selectedIndex].text;
+        }
+
+        cSelect.onchange = updateLabels;
+        gSelect.onchange = updateLabels;
+
         chatInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && chatInput.value.trim() !== "") {
                 const txt = chatInput.value;
-                socket.emit('send-message', txt);
+                socket.emit('message', txt);
                 addMessage("You: " + txt);
                 chatInput.value = "";
             }
         });
 
-        socket.on('recv-message', (m) => addMessage("Stranger: " + m));
+        socket.on('message', (m) => addMessage("Stranger: " + m));
 
         function addMessage(t) {
             const d = document.createElement('div');
@@ -130,13 +153,13 @@ app.get('/', (req, res) => {
                 const v = document.createElement('video');
                 v.id="localVideo"; v.srcObject=s; v.autoplay=true; v.muted=true; v.playsInline=true;
                 document.getElementById('localBox').appendChild(v);
-            } catch(e) { console.error("Cam error"); }
+            } catch(e) { alert("Cam Error!"); }
         }
-        window.onload = init;
+        window.onload = () => { autoDetect(); init(); };
 
         document.getElementById('startBtn').onclick = () => {
             document.getElementById('startBtn').innerText = "Next";
-            socket.emit('find');
+            socket.emit('searching', { country: cSelect.value, gender: gSelect.value });
         };
     </script>
 </body>
@@ -145,8 +168,9 @@ app.get('/', (req, res) => {
 });
 
 io.on('connection', (socket) => {
-    socket.on('send-message', (msg) => socket.broadcast.emit('recv-message', msg));
+    socket.on('message', (msg) => socket.broadcast.emit('message', msg));
+    socket.on('searching', (data) => console.log('User searching:', data));
 });
 
 const PORT = process.env.PORT || 3000;
-http.listen(PORT, () => console.log('Final Master Server Ready'));
+http.listen(PORT, () => console.log('Global Server Live'));
